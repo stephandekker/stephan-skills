@@ -1,0 +1,232 @@
+<!doctype html>
+<!--
+  Chat archive template.
+
+  Replace the {{TOKENS}} below before saving as a real archive.
+
+  Tokens:
+    {{CHAT-TITLE}}        — title shown in the header (e.g. "Claude · Topic name")
+    {{CHAT-SUBTITLE}}     — secondary line in the header (e.g. "2026-05-01 · skill-name")
+    {{AVATAR-INITIALS}}   — initials shown inside the round avatar (e.g. "CL")
+    {{DAY-LABEL}}         — date pill at the top of the chat body (e.g. "2026-05-01")
+    {{USER-NAME}}         — user's display name (footer legend)
+    {{CLAUDE-NAME}}       — assistant's display name (footer legend)
+
+  Per-message tokens:
+    {{USER-MSG-N}}        — content of the Nth user (right-side, green) bubble
+    {{USER-TIME-N}}       — timestamp shown inside that bubble
+    {{CLAUDE-MSG-N}}      — content of the Nth assistant (left-side, white) bubble
+    {{CLAUDE-TIME-N}}     — timestamp shown inside that bubble
+    {{SYSTEM-MSG-N}}      — content of the Nth centred system pill (skill invocations,
+                            file actions, etc.)
+
+  Add or remove rows as needed; the CSS handles any combination of me/them/system
+  rows in any order. HTML inside message tokens is rendered as-is — escape user
+  text (&lt;, &gt;, &amp;) before substituting.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{CHAT-TITLE}}</title>
+<style>
+  :root {
+    --wa-bg:        #ece5dd;
+    --wa-header:    #075e54;
+    --wa-header-2:  #128c7e;
+    --wa-bubble-me: #dcf8c6;
+    --wa-bubble-th: #ffffff;
+    --wa-text:      #111;
+    --wa-meta:      #667781;
+    --wa-divider:   rgba(0,0,0,0.05);
+    --wa-shadow:    0 1px 0.5px rgba(0,0,0,0.13);
+    --wa-system:    #fff8c4;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--wa-bg);
+    color: var(--wa-text);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+      radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+  .app {
+    max-width: 820px;
+    margin: 0 auto;
+    background: var(--wa-bg);
+    min-height: 100vh;
+    box-shadow: 0 0 24px rgba(0,0,0,0.08);
+  }
+  header.chat-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--wa-header);
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--wa-header-2);
+    color: #fff;
+    display: grid; place-items: center;
+    font-weight: 700;
+    font-size: 16px;
+  }
+  .who { font-weight: 600; font-size: 16px; line-height: 1.2; }
+  .meta { font-size: 12px; opacity: 0.8; }
+  main.chat {
+    padding: 16px 12px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .day {
+    align-self: center;
+    background: var(--wa-system);
+    color: #54656f;
+    font-size: 12px;
+    border-radius: 8px;
+    padding: 4px 10px;
+    margin: 8px 0;
+    box-shadow: var(--wa-shadow);
+  }
+  .row { display: flex; }
+  .row.me  { justify-content: flex-end; }
+  .row.them { justify-content: flex-start; }
+  .row.system { justify-content: center; }
+  .bubble {
+    max-width: 78%;
+    padding: 8px 12px 18px;
+    border-radius: 8px;
+    font-size: 14.2px;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: var(--wa-shadow);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  .row.me .bubble {
+    background: var(--wa-bubble-me);
+    border-top-right-radius: 0;
+  }
+  .row.them .bubble {
+    background: var(--wa-bubble-th);
+    border-top-left-radius: 0;
+  }
+  .row.system .bubble {
+    background: var(--wa-system);
+    color: #54656f;
+    font-style: italic;
+    font-size: 12.5px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 90%;
+  }
+  .time {
+    position: absolute;
+    right: 10px;
+    bottom: 4px;
+    font-size: 11px;
+    color: var(--wa-meta);
+  }
+  .bubble pre, .bubble code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+  .bubble pre {
+    background: rgba(0,0,0,0.05);
+    border-radius: 6px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 6px 0;
+  }
+  .bubble blockquote {
+    border-left: 3px solid rgba(0,0,0,0.2);
+    margin: 6px 0;
+    padding: 2px 0 2px 10px;
+    color: #444;
+    white-space: pre-wrap;
+  }
+  .bubble strong { font-weight: 700; }
+  .bubble em { font-style: italic; }
+  footer.legend {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.92);
+    border-top: 1px solid rgba(0,0,0,0.08);
+    font-size: 12px;
+    color: #54656f;
+    padding: 8px 16px;
+    text-align: center;
+  }
+  .legend .me-dot, .legend .th-dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    vertical-align: middle; margin-right: 4px;
+  }
+  .legend .me-dot { background: var(--wa-bubble-me); border: 1px solid #b6d8a3; }
+  .legend .th-dot { background: var(--wa-bubble-th); border: 1px solid #d8d8d8; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="chat-header">
+    <div class="avatar">{{AVATAR-INITIALS}}</div>
+    <div>
+      <div class="who">{{CHAT-TITLE}}</div>
+      <div class="meta">{{CHAT-SUBTITLE}}</div>
+    </div>
+  </header>
+
+  <main class="chat">
+    <div class="day">{{DAY-LABEL}}</div>
+
+    <!-- User message 1 -->
+    <div class="row me"><div class="bubble">{{USER-MSG-1}}<span class="time">{{USER-TIME-1}}</span></div></div>
+
+    <!-- Claude message 1 -->
+    <div class="row them"><div class="bubble">{{CLAUDE-MSG-1}}<span class="time">{{CLAUDE-TIME-1}}</span></div></div>
+
+    <!-- System message 1 (skill invocation, file action, etc.) -->
+    <div class="row system"><div class="bubble">{{SYSTEM-MSG-1}}</div></div>
+
+    <!-- User message 2 -->
+    <div class="row me"><div class="bubble">{{USER-MSG-2}}<span class="time">{{USER-TIME-2}}</span></div></div>
+
+    <!-- Claude message 2 -->
+    <div class="row them"><div class="bubble">{{CLAUDE-MSG-2}}<span class="time">{{CLAUDE-TIME-2}}</span></div></div>
+
+    <!-- System message 2 -->
+    <div class="row system"><div class="bubble">{{SYSTEM-MSG-2}}</div></div>
+
+    <!-- User message 3 -->
+    <div class="row me"><div class="bubble">{{USER-MSG-3}}<span class="time">{{USER-TIME-3}}</span></div></div>
+
+    <!-- Claude message 3 -->
+    <div class="row them"><div class="bubble">{{CLAUDE-MSG-3}}<span class="time">{{CLAUDE-TIME-3}}</span></div></div>
+
+    <!-- System message 3 -->
+    <div class="row system"><div class="bubble">{{SYSTEM-MSG-3}}</div></div>
+
+  </main>
+</div>
+
+<footer class="legend">
+  <span class="me-dot"></span> {{USER-NAME}}&nbsp;&nbsp;·&nbsp;&nbsp;
+  <span class="th-dot"></span> {{CLAUDE-NAME}}
+</footer>
+
+</body>
+</html>
